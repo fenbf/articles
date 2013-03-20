@@ -77,19 +77,20 @@ void Generator::buildAll()
 		m_headers.emplace_back(HeaderFile("header_" + to_string(id) + ".h"));
 	}	
 
-	// generate header names
-	for (unsigned int id = 1; id < m_headerCount; ++id)
+	// set cross includes...
+	for (unsigned int id = 0; id < m_headerCount; ++id)
 	{
-		// generate header names
-		for (unsigned int j = 0; j < id; ++j)
+		for (unsigned int j = 0; j < m_headerCount; ++j)
 		{
-			m_headers[id].addInclude(&m_headers[j]);
+			if (id != j)
+				m_headers[id].addInclude(&m_headers[j]);
 		}
 	}
 
 	// single main file
 	m_mainFile = unique_ptr<CppFile>(new CppFile("testHeaders.cpp", "main"));
 
+	// this source file includes all the header files
 	for (unsigned int i = 0; i < m_headerCount; ++i)
 	{
 		m_mainFile->addInclude(&m_headers[i]);
@@ -98,10 +99,19 @@ void Generator::buildAll()
 	// class gen
 	m_classGen = unique_ptr<ClassGenerator>(new ClassGenerator(m_complexCount));
 
-	for (unsigned int id = 0; id < m_headerCount; ++id)
+	// additional <string> include:
+	string extraStr = "#include <string>";
+	if (m_useIfDef)
 	{
-		m_headers[id].create(m_path, m_classGen.get(), "#include <string>");
+		extraStr = "#ifndef STD_STRING_INCLUDED\n#define STD_STRING_INCLUDED\n#include <string>\n#endif\n";
 	}
 
+	// generate headers:
+	for (unsigned int id = 0; id < m_headerCount; ++id)
+	{
+		m_headers[id].create(m_path, m_classGen.get(), extraStr);
+	}
+
+	// generate main file:
 	m_mainFile->create(m_path);
 }
