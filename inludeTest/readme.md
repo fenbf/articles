@@ -1,4 +1,4 @@
-#Test Source Generator #
+#Source Code Generator#
 Generates C++ source code file structure that can be use to test compilation/build performance.
 
 ##What?##
@@ -25,7 +25,7 @@ We would like to create:
 	#endif 
     // ...
 
-    // class declaration here
+    // content here...
 
 **A class declaration**
 
@@ -50,7 +50,7 @@ We would like to create:
 	    void setm_variable_2(float v)  { m_variable_2 = v; }	
 	    float getm_variable_2() const  { return m_variable_2; }	
 	};    
-It is a simple class with N-different variables with getters and setters.
+It is a simple class with N-different variables with getters and setters. This class declaration can be put in a header file.
 
 **A Cpp file**
 
@@ -135,4 +135,5 @@ Same as above, but header file looks like that:
 
 ##Todo##
 * Classes like SourceFile, HeaderFile and CppFile violates **SRP** (they hold info about a file and at the same time they are used to generate such file). Maybe there should be some additional class like *HeaderGenerator*, *CppGenerator* or similar.
-* automatic makefile/project creation would be helpful as well
+* Automatic makefile/project creation would be helpful as well
+* Ability to use techniques like **forward declarations** (and use pointers/referances instead of values) to reduce compile time coupling. This would require better *ClassGenerator* implementation
