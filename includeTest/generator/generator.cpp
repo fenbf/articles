@@ -18,7 +18,6 @@ private:
 	
 	vector<HeaderFile> m_headers;
 	unique_ptr<CppFile> m_mainFile;
-
 	unique_ptr<ClassGenerator> m_classGen;
 public:
 	Generator(unsigned int hCount, unsigned int cCount, const char *path, bool up, bool ud) 

@@ -72,32 +72,32 @@ It is a simple class with N-different variables with getters and setters. This c
 	    return 0;
 	}
 
-Source file where all of our classes are used.
+Source file where all of our classes are used - just by simple object creation.
 
 ##Why?##
-We would like to test compile time of such code structure. We have several options to test:
+We would like to have an option to test compile time of various code structure. We have several options to test:
 
-* **code structure**: Simple test involves only one cpp file that include all header files. Each header file includes all other header files as well. But we can create some other structures.
+* **various structure configuration**: We can use the generator to create different code configurations. For instance, simple test could involve only one cpp file that include N header files. Each header file includes all other header files as well. 
 * **#pragma once**: How this improves the compilation time?
 * **additional include guard**: How this improves the compilation time?
 
 ##Structure##
-**Generator** 
-
-Main class that is runs the generation process. Created in `main`, in `generator.cpp` file.
+**Generator** - Main class that is runs the generation process. Created in `main` in `generator.cpp` file.
 
 It has some important members:
 
 * *m_headerCount* - number of headers to generate
 * *m_complexCount* - how generated classes are complex, or simply how many fields they have.
 
-**SourceFile** - Base class that describe source file to be generated and the creation method. Holds info like *fileName*, *type* (Header or Cpp), and a list of header files that are included - both *.h* files and *.cpp* files can include things.
+**SourceFile** - Base class that describes source file to be generated and the creation method. Holds info like *fileName*, *type* (Header or Cpp), and a list of header files that are included - both *.h* files and *.cpp* files can include things.
 
 **HeaderFile** - Can create a header file.
 
 **CppFile** - Can create a cpp file.
 
 **ClassGenerator** - Knows how to create declaration of a class.
+
+**main()** - creates one Generator and initializes it with params obtained from command line.
 
 ##Examples##
 
@@ -137,3 +137,4 @@ Same as above, but header file looks like that:
 * Classes like SourceFile, HeaderFile and CppFile violates **SRP** (they hold info about a file and at the same time they are used to generate such file). Maybe there should be some additional class like *HeaderGenerator*, *CppGenerator* or similar.
 * Automatic makefile/project creation would be helpful as well
 * Ability to use techniques like **forward declarations** (and use pointers/referances instead of values) to reduce compile time coupling. This would require better *ClassGenerator* implementation
+* Probably the class *HeaderFile* should be extended to support *system header* files, like `<string>`, `<windows.h>` etc...

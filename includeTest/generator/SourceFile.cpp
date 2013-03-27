@@ -80,7 +80,7 @@ void HeaderFile::create(const string &path, ClassGenerator *classGen, const std:
 	assert(classGen);
 	classGen->writeClassDecl(headerFile, m_className);
 
-	headerFile << "\n#endif " << m_defineName << endl;
+	headerFile << "\n#endif //" << m_defineName << endl;
 	
 	headerFile.close();
 }
