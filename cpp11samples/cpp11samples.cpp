@@ -93,6 +93,34 @@ void testFor()
 
 }
 
+bool reverseOrder(const double &a, const double &b)
+{
+	return b < a;
+}
+
+void testLamda()
+{
+	std::vector<double> vecMarks{ 0, 1, 2, 3, 4 };
+
+	std::sort(vecMarks.begin(), vecMarks.end(),
+		reverseOrder);
+
+	std::sort(begin(vecMarks), end(vecMarks), 
+		[](const double &a, const double &b){
+		return b < a;
+	});
+
+	int counter = 0;
+	std::sort(begin(vecMarks), end(vecMarks),
+		[&](const double &a, const double &b){
+		++counter;
+		return b < a;
+	});
+
+	auto lam = [](int a) -> double { return (double)a; };
+	double d = lam(0);
+}
+
 //enum CarType { ctNone, ctSport, ctCoupe, ctVan };
 //
 //class Car
@@ -245,6 +273,7 @@ int main()
 	// betterPointers();
 	// testCont();
 	// testFor();
+	testLamda();
 
 	std::cout << "\n\n\nHello World!" << std::endl;
 }
