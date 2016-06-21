@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS // to make life a bit easier...
-
 #include <iostream>
 #include <stdarg.h>
 #include <stdio.h>
@@ -12,13 +10,13 @@
 void MyTraceImpl(int line, const char *fileName, const char *msg, ...)
 {
 	va_list args;
-	char buffer[128];
-	sprintf(buffer, "%s(%d) : ", fileName, line);
+	char buffer[256] = { 0 };
+	sprintf_s(buffer, "%s(%d) : ", fileName, line);
 	OutputDebugString(buffer);
 
 	// retrieve the variable arguments
 	va_start(args, msg);
-	vsprintf(buffer, msg, args);
+	vsprintf_s(buffer, msg, args);
 	OutputDebugString(buffer);
 	va_end(args);
 }
@@ -31,6 +29,7 @@ void MyFunc(const std::string &one, const std::string &two)
 
 int main()
 {
+	OutputDebugString("DebuggingTipsSamples.cpp(32) : super");
 	MY_TRACE("Hello World %d\n", 5);
 	MyFunc("Hello ", "World");
 	int a = 0; 
