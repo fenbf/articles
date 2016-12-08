@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="SimpleParam">
+    <DisplayString>String: {mStr,sb}, Integer Value{mVal}, StrLen {strlen(&amp;mStr[0])}</DisplayString>
+    <Expand>
+      <Item Name="String">mStr,sb</Item>
+      <Item Name="Integer Value">mVal</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

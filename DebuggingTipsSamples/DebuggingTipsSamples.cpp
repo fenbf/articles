@@ -132,6 +132,11 @@ void ScanForInvalidRects(const std::vector<RECT>& rects)
 	}
 }
 
+bool CheckRect(const RECT& r)
+{
+	return r.right - r.left > 100;
+}
+
 void DebugRectLoop()
 {
 	std::vector<RECT> rects(100);
