@@ -195,6 +195,18 @@ public:
 	virtual void Stop() { }
 };
 
+//class FlyingCar : public Car
+//{
+//public:
+//	FlyingCar(const char *name, int age) :
+//		Car(name, age, CarType::Sport)
+//	{ }
+//
+//	virtual void Drive(int distance) override { }
+//	virtual void Stop() override { }
+//	virtual void Fly() override { } // error: "Fly" is not a virtual function on the base class
+//};
+
 class SportCar final : public Car
 {
 public:
@@ -202,8 +214,8 @@ public:
 		Car(name, age, CarType::Sport)
 	{ }
 
-	virtual void Drive(int distance) { }
-	virtual void Stop() { }
+	virtual void Drive(int distance) override { }
+	virtual void Stop() override { }
 };
 
 // error: cannot derive from a 'final' class (SportCar)
