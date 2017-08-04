@@ -9,18 +9,16 @@ using namespace std;
 namespace fs = std::experimental::filesystem;
 
 // example adapted from https://docs.microsoft.com/pl-pl/cpp/standard-library/file-system-navigation
-string DisplayPathInfo(const fs::path& pathToShow)
+void DisplayPathInfo(const fs::path& pathToShow)
 {
-	ostringstream os;
-	
 	int i = 0;	
-	os << "Displaying path info for: " << pathToShow << "\n";
+	cout << "Displaying path info for: " << pathToShow << "\n";
 	for (const auto& part : pathToShow)
 	{
-		os << "path part: " << i++ << " = " << part << "\n";
+		cout << "path part: " << i++ << " = " << part << "\n";
 	}
 
-	os	<< "exists() = " << fs::exists(pathToShow) << "\n"
+	cout << "exists() = " << fs::exists(pathToShow) << "\n"
 		<< "root_name() = " << pathToShow.root_name() << "\n"
 		<< "root_path() = " << pathToShow.root_path() << "\n"
 		<< "relative_path() = " << pathToShow.relative_path() << "\n"
@@ -31,19 +29,89 @@ string DisplayPathInfo(const fs::path& pathToShow)
 
 	try
 	{
-		os << "canonical() = " << fs::canonical(pathToShow) << "\n";
+		cout << "canonical() = " << fs::canonical(pathToShow) << "\n";
 	}
 	catch (fs::filesystem_error err)
 	{
 		cout << "exception: " << err.what() << "\n";
 	}
-
-	return os.str();
 }
+
+std::uintmax_t ComputeFileSize(const fs::path& pathToCheck)
+{
+	if (fs::exists(pathToCheck) && fs::is_regular_file(pathToCheck))
+	{
+		auto err = std::error_code{};
+		auto filesize = fs::file_size(pathToCheck, err);
+		if (filesize != static_cast<uintmax_t>(-1))
+			return filesize;
+	}
+
+	return static_cast<uintmax_t>(-1);
+}
+
+std::uintmax_t ComputeDirectorySize(const fs::path& pathToCheck)
+{
+	auto size = static_cast<uintmax_t>(-1);
+	if (fs::exists(pathToCheck) && fs::is_directory(pathToCheck))
+	{
+		for (auto const & entry : fs::recursive_directory_iterator(pathToCheck))
+		{
+			if (fs::is_regular_file(entry.status()) || fs::is_symlink(entry.status()))
+			{
+				auto err = std::error_code{};
+				auto filesize = fs::file_size(entry, err);
+				if (filesize != static_cast<uintmax_t>(-1))
+					size += filesize;
+			}
+		}
+	}
+	return size;
+}
+
+void DisplayDirectoryTreeImp(const fs::path& pathToShow, int level)
+{
+	if (fs::exists(pathToShow) && fs::is_directory(pathToShow))
+	{
+		auto lead = std::string(level * 3, ' ');
+		for (auto const & entry : fs::directory_iterator(pathToShow))
+		{
+			auto filename = entry.path().filename();
+			if (fs::is_directory(entry.status()))
+			{
+				cout << lead << "[+] " << filename << "\n";
+				DisplayDirectoryTreeImp(entry, level + 1);
+				cout << "\n";
+			}
+			else if (fs::is_symlink(entry.status()))
+				cout << lead << " [>] " << filename << "\n";
+			else if (fs::is_regular_file(entry.status()))
+			{
+				std::time_t cftime = std::chrono::system_clock::to_time_t(fs::last_write_time(entry));
+				cout << lead << " " << filename << ", " << ComputeFileSize(entry) << ", time: " << std::asctime(std::localtime(&cftime));
+			}
+			else
+				cout << lead << " [?]" << filename << "\n";
+		}
+	}
+}
+
+// adapted from Modern C++ Programming Cookbook
+void DisplayDirectoryTree(const fs::path& pathToShow)
+{
+	DisplayDirectoryTreeImp(pathToShow, 0);
+}
+
 
 int main(int argc, char* argv[])
 {
 	const fs::path pathToShow{ argc >= 2 ? argv[1] : fs::current_path() };
 
-	cout << DisplayPathInfo(pathToShow) << endl;
+	DisplayPathInfo(pathToShow);
+
+	DisplayDirectoryTree(pathToShow);
+
+	const auto dirSize = ComputeDirectorySize(pathToShow);
+	if (dirSize != static_cast<uintmax_t>(-1))
+		cout << "Directory size: " << dirSize << "\n";
 }
