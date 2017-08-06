@@ -4,6 +4,7 @@
 #include <iostream>  
 #include <sstream>  
 #include <filesystem>  
+#include "filesystemTest.h"
 
 using namespace std;
 namespace fs = std::experimental::filesystem;
@@ -61,7 +62,7 @@ std::uintmax_t ComputeDirectorySize(const fs::path& pathToCheck)
 			{
 				auto err = std::error_code{};
 				auto filesize = fs::file_size(entry, err);
-				if (filesize != static_cast<uintmax_t>(-1))
+				if (filesize != static_cast<uintmax_t>(-1) && err != std::error_code())
 					size += filesize;
 			}
 		}
@@ -69,12 +70,20 @@ std::uintmax_t ComputeDirectorySize(const fs::path& pathToCheck)
 	return size;
 }
 
+void DisplayFileInfo(const std::experimental::filesystem::v1::directory_entry & entry, std::string &lead, std::experimental::filesystem::v1::path &filename)
+{
+	time_t cftime = chrono::system_clock::to_time_t(fs::last_write_time(entry));
+	cout << lead << " " << filename << ", " 
+		 << ComputeFileSize(entry) 
+		 << ", time: " << std::asctime(std::localtime(&cftime));
+}
+
 void DisplayDirectoryTreeImp(const fs::path& pathToShow, int level)
 {
 	if (fs::exists(pathToShow) && fs::is_directory(pathToShow))
 	{
 		auto lead = std::string(level * 3, ' ');
-		for (auto const & entry : fs::directory_iterator(pathToShow))
+		for (const auto& entry : fs::directory_iterator(pathToShow))
 		{
 			auto filename = entry.path().filename();
 			if (fs::is_directory(entry.status()))
@@ -83,13 +92,8 @@ void DisplayDirectoryTreeImp(const fs::path& pathToShow, int level)
 				DisplayDirectoryTreeImp(entry, level + 1);
 				cout << "\n";
 			}
-			else if (fs::is_symlink(entry.status()))
-				cout << lead << " [>] " << filename << "\n";
 			else if (fs::is_regular_file(entry.status()))
-			{
-				std::time_t cftime = std::chrono::system_clock::to_time_t(fs::last_write_time(entry));
-				cout << lead << " " << filename << ", " << ComputeFileSize(entry) << ", time: " << std::asctime(std::localtime(&cftime));
-			}
+				DisplayFileInfo(entry, lead, filename);
 			else
 				cout << lead << " [?]" << filename << "\n";
 		}
@@ -114,4 +118,15 @@ int main(int argc, char* argv[])
 	const auto dirSize = ComputeDirectorySize(pathToShow);
 	if (dirSize != static_cast<uintmax_t>(-1))
 		cout << "Directory size: " << dirSize << "\n";
+
+	cout << "path concat/append:\n";
+	fs::path p1("C:\\temp");
+	p1 /= "user";
+	p1 /= "data";
+	cout << p1 << "\n";
+
+	fs::path p2("C:\\temp\\");
+	p2 += "user";
+	p2 += "data";
+	cout << p2 << "\n";
 }
