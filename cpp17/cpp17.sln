@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "filesystemTest", "filesystemTest.vcxproj", "{F0DD8AEC-E54B-4712-9587-049C4256F983}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "searchers", "searchers\searchers.vcxproj", "{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,19 @@ Global
 		{F0DD8AEC-E54B-4712-9587-049C4256F983}.Release|x64.Build.0 = Release|x64
 		{F0DD8AEC-E54B-4712-9587-049C4256F983}.Release|x86.ActiveCfg = Release|Win32
 		{F0DD8AEC-E54B-4712-9587-049C4256F983}.Release|x86.Build.0 = Release|Win32
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Debug|x64.ActiveCfg = Debug|x64
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Debug|x64.Build.0 = Debug|x64
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Debug|x86.ActiveCfg = Debug|Win32
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Debug|x86.Build.0 = Debug|Win32
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Release|x64.ActiveCfg = Release|x64
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Release|x64.Build.0 = Release|x64
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Release|x86.ActiveCfg = Release|Win32
+		{D63D0A19-2CAA-4EC9-AB21-CCC1D8E1E864}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6F2CDD2-B81C-4ACA-BE81-A2DF506B65EA}
 	EndGlobalSection
 EndGlobal
