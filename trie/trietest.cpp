@@ -16,7 +16,7 @@ public:
 		if (word.empty())
 			return;
 
-		TrieNode* pNode = &_root;
+		TrieNode* pNode = &root;
 		for (const auto& ch : word) {
 			pNode = &(pNode->children[ch]);
 		}
@@ -24,12 +24,12 @@ public:
 	}
 
 	bool Find(std::string_view word) const {
-		auto pNode = FindNode(word, &_root);
+		auto pNode = FindNode(word, &root);
 		return pNode ? pNode->isWord : false;
 	}
 
 	bool Remove(std::string_view word) {
-		auto pNode = FindNode(word, &_root);
+		auto pNode = FindNode(word, &root);
 		if (pNode) {
 			pNode->isWord = false;
 			return true;
@@ -40,7 +40,7 @@ public:
 	std::vector<std::string> Match(std::string_view prefix) const {
 		std::vector<std::string> out;
 
-		auto pNode = FindNode(prefix, const_cast<TrieNode*>(&_root));
+		auto pNode = prefix.empty() ? &root : FindNode(prefix, &root);
 		if (!pNode)
 			return out;
 
@@ -71,10 +71,11 @@ public:
 	}
 
 private:
+	
 	// template to deduce the constness, good idea according to 
 	// https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es50-dont-cast-away-const
-	template <typename T>
-	static T* FindNode(std::string_view word, T* pRoot) {
+	template <typename T> requires std::is_same_v<TrieNode, std::remove_cv_t<T>>
+	static T* FindNode(std::string_view word, T* pRoot)  {
 		if (word.empty())
 			return nullptr;
 
@@ -91,7 +92,7 @@ private:
 	}
 
 private:
-	TrieNode _root;
+	TrieNode root;
 };
 
 int main() {
@@ -99,14 +100,30 @@ int main() {
 	tr.Insert("hello");
 	tr.Insert("head");
 	tr.Insert("heap");
+	tr.Insert("abc");
+	tr.Insert("abstract");
+	tr.Insert("absolute");
 
-	auto vec = tr.Match("he");
+	std::cout << "match all:\n";
+	auto vec = tr.Match("");
 	for (auto& word : vec)
 		std::cout << word << '\n';
 
-	tr.Remove("hello");
-
+	std::cout << "match 'he':\n";
 	vec = tr.Match("he");
+	for (auto& word : vec)
+		std::cout << word << '\n';
+
+	std::cout << "Removing 'hello'... " << std::boolalpha << tr.Remove("hello") << '\n';
+	std::cout << "Removing 'absolute'... " << std::boolalpha << tr.Remove("absolute") << '\n';
+
+	std::cout << "match 'he' again:\n";
+	vec = tr.Match("he");
+	for (auto& word : vec)
+		std::cout << word << '\n';
+
+	std::cout << "match all:\n";
+	vec = tr.Match("");
 	for (auto& word : vec)
 		std::cout << word << '\n';
 }
