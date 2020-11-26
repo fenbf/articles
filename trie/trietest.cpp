@@ -12,6 +12,16 @@ class Trie {
 	};
 
 public:
+
+	Trie() = default;
+	Trie(std::initializer_list<std::string_view> words) {
+		for (auto& w : words)
+			Insert(w);
+	}
+
+	size_t Size() const { return size; }
+	size_t NumNodes() const { return numNodes; }
+
 	void Insert(std::string_view word) {
 		if (word.empty())
 			return;
@@ -19,8 +29,10 @@ public:
 		TrieNode* pNode = &root;
 		for (const auto& ch : word) {
 			pNode = &(pNode->children[ch]);
+			++numNodes;
 		}
 		pNode->isWord = true;
+		++size;
 	}
 
 	bool Find(std::string_view word) const {
@@ -30,10 +42,46 @@ public:
 
 	bool Remove(std::string_view word) {
 		auto pNode = FindNode(word, &root);
-		if (pNode) {
+		if (pNode && pNode->isWord) {
 			pNode->isWord = false;
+			--size;
 			return true;
 		}
+		return false;
+	}
+
+	bool RemoveAndDeleteNodes(std::string_view word) {
+		if (word.empty())
+			return false;
+
+		auto pNode = &root;
+		TrieNode* pLowestParentWithSeveralChildren = nullptr;
+		char lastChartoDelete = 0;
+		size_t distanceToParent = 0;
+		for (const auto& ch : word) {
+			const auto it = pNode->children.find(ch);
+			if (it == pNode->children.end())
+				return false;
+
+			if (pNode->children.size() > 1)	{ // it must be root at least
+				pLowestParentWithSeveralChildren = pNode;
+				lastChartoDelete = ch;
+				distanceToParent = 1;
+			}
+			else
+				++distanceToParent;
+
+			pNode = &(it->second);
+		}
+
+		if (pNode && pNode->isWord && pLowestParentWithSeveralChildren)
+		{
+			pLowestParentWithSeveralChildren->children.erase(lastChartoDelete);			
+			--size;
+			numNodes -= distanceToParent;
+			return true;
+		}
+
 		return false;
 	}
 
@@ -93,37 +141,47 @@ private:
 
 private:
 	TrieNode root;
+	size_t size{ 0 };
+	size_t numNodes{ 0 }; // excluding root
 };
 
 int main() {
-	Trie tr;
-	tr.Insert("hello");
-	tr.Insert("head");
-	tr.Insert("heap");
-	tr.Insert("abc");
-	tr.Insert("abstract");
-	tr.Insert("absolute");
+	Trie tr{ 
+		{"hello"},
+		{"head"},
+		{"heap"},
+		{"abc"},
+		{"abstract"},
+		{"absolute"}  
+	};
+
+	auto PrintWords = [](const auto& vecWords) {
+		for (auto& word : vecWords)
+			std::cout << "    " << word << '\n';
+	};
+
+	std::cout << "num words in the Trie: " << tr.Size() << " num nodes: " << tr.NumNodes() << '\n';
 
 	std::cout << "match all:\n";
-	auto vec = tr.Match("");
-	for (auto& word : vec)
-		std::cout << word << '\n';
+	PrintWords(tr.Match(""));
 
 	std::cout << "match 'he':\n";
-	vec = tr.Match("he");
-	for (auto& word : vec)
-		std::cout << word << '\n';
+	PrintWords(tr.Match("he"));
 
-	std::cout << "Removing 'hello'... " << std::boolalpha << tr.Remove("hello") << '\n';
-	std::cout << "Removing 'absolute'... " << std::boolalpha << tr.Remove("absolute") << '\n';
+	std::cout << "removing 'hello'... " << std::boolalpha << tr.Remove("hello") << '\n';
+	std::cout << "removing 'absolute'... " << std::boolalpha << tr.Remove("absolute") << '\n';
+	std::cout << "num words in the Trie: " << tr.Size() << " num nodes: " << tr.NumNodes() << '\n';
 
 	std::cout << "match 'he' again:\n";
-	vec = tr.Match("he");
-	for (auto& word : vec)
-		std::cout << word << '\n';
+	PrintWords(tr.Match("he"));
 
 	std::cout << "match all:\n";
-	vec = tr.Match("");
-	for (auto& word : vec)
-		std::cout << word << '\n';
+	PrintWords(tr.Match(""));
+
+	tr.Insert("barter");
+	std::cout << "after inserting \'barter\':\n";
+	std::cout << "num words in the Trie: " << tr.Size() << " num nodes: " << tr.NumNodes() << '\n';
+	PrintWords(tr.Match(""));
+	tr.RemoveAndDeleteNodes("barter");
+	std::cout << "num words in the Trie: " << tr.Size() << " num nodes: " << tr.NumNodes() << '\n';
 }
