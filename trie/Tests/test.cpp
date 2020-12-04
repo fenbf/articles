@@ -64,3 +64,21 @@ TEST(Remove, ThreeWordsFull) {
 	EXPECT_EQ(tr.Size(), 1);
 	EXPECT_EQ(tr.NumNodes(), 4); // ABDD was left
 }
+
+TEST(Match, Empty) {
+	Trie tr;
+	auto vec = tr.Match("");
+	EXPECT_TRUE(vec.empty());
+}
+
+TEST(Match, All) {
+	Trie tr{ "ABC", "ABCD", "ABCDE", "ABXYZ" };
+	auto vec = tr.Match("");
+	EXPECT_EQ(vec.size(), 4);
+}
+
+TEST(Match, FewWords) {
+	Trie tr{ "ABC", "ABCD", "ABCDE", "ABXYZ" };
+	auto vec = tr.Match("ABC");
+	EXPECT_EQ(vec.size(), 3);
+}
