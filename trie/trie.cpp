@@ -35,13 +35,16 @@ void Trie::Insert(std::string_view word) {
 
 	TrieNode* pNode = &root;
 	for (const auto& ch : word) {
-		auto [iter, wasInserted] = pNode->children.try_emplace(ch);
+		const auto [iter, wasInserted] = pNode->children.try_emplace(ch);
 		pNode = &iter->second;
 		if (wasInserted)
 			++numNodes;
 	}
-	pNode->isWord = true;
-	++size;
+
+	if (!pNode->isWord) {
+		pNode->isWord = true;
+		++size;
+	}
 }
 
 bool Trie::Find(std::string_view word) const {

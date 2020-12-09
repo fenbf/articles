@@ -39,6 +39,13 @@ TEST(Insert, ThreeWords) {
 	EXPECT_EQ(tr.NumNodes(), 7);
 }
 
+TEST(Insert, TwoSameWords) {
+	Trie tr;
+	tr.Insert("ABC");
+	tr.Insert("ABC");
+	EXPECT_EQ(tr.Size(), 1);
+	EXPECT_EQ(tr.NumNodes(), 3);
+}
 TEST(Remove, TwoWordsFast) {
 	Trie tr{ "XYZ", "ABC" };
 	tr.Remove("XYZ");

@@ -17,8 +17,8 @@ public:
 	Trie() = default;
 	Trie(std::initializer_list<std::string_view> words);
 
-	size_t Size() const { return size; }
-	size_t NumNodes() const { return numNodes; }
+	size_t Size() const noexcept { return size; }
+	size_t NumNodes() const noexcept { return numNodes; }
 
 	void Insert(std::string_view word);
 
