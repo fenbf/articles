@@ -26,7 +26,7 @@ void MyTraceImpl(int line, const char *fileName, const char *msg, ...)
 class SimpleParam
 {
 public:
-	SimpleParam(const std::string& str, int val) : mStr(str), mVal(val) 
+	SimpleParam(std::string str, int val) : mStr(std::move(str)), mVal(val) 
 	{ 
 		Init();
 	}
@@ -36,7 +36,7 @@ public:
 
 private:
 	std::string mStr;
-	int mVal;
+	int mVal{ 0 };
 };
 
 void CallBackFunction(SimpleParam p1, SimpleParam p2)
@@ -175,6 +175,8 @@ int main()
 	// run method 5 times, try to change `bEnableFix` inside while debugging 
 	for (int i = 0; i < 5; ++i)
 		MethodToFix();
+
+	SimpleParam input{ "number", 42 };
 
 	CallBackFunction({ "Hello", 1 }, { "World", 2 });
 
