@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "trie", "trie.vcxproj", "{0C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{CE31D881-BF10-45BF-9884-C3BF85381FF1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "trie-perf", "Perf\trie-perf.vcxproj", "{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{CE31D881-BF10-45BF-9884-C3BF85381FF1}.Release|x64.Build.0 = Release|x64
 		{CE31D881-BF10-45BF-9884-C3BF85381FF1}.Release|x86.ActiveCfg = Release|Win32
 		{CE31D881-BF10-45BF-9884-C3BF85381FF1}.Release|x86.Build.0 = Release|Win32
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Debug|x64.ActiveCfg = Debug|x64
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Debug|x64.Build.0 = Debug|x64
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Debug|x86.ActiveCfg = Debug|Win32
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Debug|x86.Build.0 = Debug|Win32
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Release|x64.ActiveCfg = Release|x64
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Release|x64.Build.0 = Release|x64
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Release|x86.ActiveCfg = Release|Win32
+		{EDA9AC06-F585-4E08-AAED-E6DBDEC45C48}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
