@@ -115,6 +115,13 @@ auto FilterRangesCopyIf(const std::vector<T>& vec, Pred p) {
 	return out;
 }
 
+template <typename TCont, typename Pred>
+auto FilterRangesCopyIfGen(const TCont& vec, Pred p) {
+	TCont out;
+	std::ranges::copy_if(vec, std::back_inserter(out), p);
+	return out;
+}
+
 int main() {
 	const std::vector<std::string> vec{ "Hello", "**txt", "World", "error", "warning", "C++", "****" };
 
@@ -134,7 +141,7 @@ int main() {
 		printVec("FilterRawOld", filtered);
 	}
 	{
-		auto filtered = FilterCopyIf(vec, [](auto& elem, int a) { return !elem.starts_with('*'); });
+		auto filtered = FilterCopyIf(vec, [](auto& elem) { return !elem.starts_with('*'); });
 		printVec("FilterCopyIf", filtered);
 
 		//filtered = FilterCopyIf(vec, [](auto& elem) { return elem; });
@@ -163,6 +170,10 @@ int main() {
 	}
 	{
 		auto filtered = FilterRangesCopyIf(vec, [](auto& elem) { return !elem.starts_with('*'); });
+		printVec("FilterRangesCopyIf", filtered);
+	}
+	{
+		auto filtered = FilterRangesCopyIfGen(vec, [](auto& elem) { return !elem.starts_with('*'); });
 		printVec("FilterRangesCopyIf", filtered);
 	}
 	{
