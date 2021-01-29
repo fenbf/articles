@@ -7,4 +7,15 @@
       <Item Name="Integer Value">mVal</Item>
     </Expand>
   </Type>
+
+  <Type Name="MapVertex">
+    <DisplayString Condition="m_vecNeighbours.empty()">Empty</DisplayString>
+    <DisplayString Condition="!m_vecNeighbours.empty()">Neighbours: {m_vecNeighbours.size()}</DisplayString>
+    <Expand>
+      <IndexListItems>
+        <Size>m_vecNeighbours.size()</Size>
+        <ValueNode>m_vecNeighbours[$i]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>
