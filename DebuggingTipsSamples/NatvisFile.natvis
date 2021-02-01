@@ -8,14 +8,19 @@
     </Expand>
   </Type>
 
+  <!--<Type Name="MapVertex">
+    <DisplayString Condition="m_vecNeighbours.size() == 0">{m_name,sb}, empty</DisplayString>
+    <DisplayString Condition="m_vecNeighbours.size() != 0">{m_name,sb}, neighbours { m_vecNeighbours.size() }, flags { m_flags }</DisplayString>
+  </Type>-->
+    
   <Type Name="MapVertex">
-    <DisplayString Condition="m_vecNeighbours.empty()">Empty</DisplayString>
-    <DisplayString Condition="!m_vecNeighbours.empty()">Neighbours: {m_vecNeighbours.size()}</DisplayString>
+    <DisplayString Condition="m_vecNeighbours.size() == 0">{m_name,sb}, empty</DisplayString>
+    <DisplayString Condition="m_vecNeighbours.size() != 0">{m_name,sb}, neighbours { m_vecNeighbours.size() }, flags { m_flags }</DisplayString>
     <Expand>
       <IndexListItems>
-        <Size>m_vecNeighbours.size()</Size>
-        <ValueNode>m_vecNeighbours[$i]</ValueNode>
-      </IndexListItems>
+      <Size>m_vecNeighbours.size()</Size>
+      <ValueNode>*m_vecNeighbours[$i]</ValueNode>
+    </IndexListItems>
     </Expand>
   </Type>
 </AutoVisualizer>
