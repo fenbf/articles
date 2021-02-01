@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 // filter - copy only those elements into out that satisfies the predicate
 
@@ -36,6 +37,25 @@ template <typename T, typename Pred>
 auto FilterCopyIf(const std::vector<T>& vec, Pred p) {
 	std::vector<T> out;
 	std::copy_if(begin(vec), end(vec), std::back_inserter(out), p);
+	return out;
+}
+
+template <typename T, typename = void>
+struct has_push_back : std::false_type {};
+
+template <typename T>
+struct has_push_back<T
+	, std::void_t<decltype(std::declval<T>().push_back(std::declval<typename T::value_type>()))>
+	> : std::true_type {};
+
+template <typename TCont, typename Pred>
+auto FilterCopyIfGen(const TCont& cont, Pred p) {
+	TCont out;
+	if constexpr(has_push_back<TCont>::value)
+		std::copy_if(begin(cont), end(cont), std::back_inserter(out), p);
+	else
+		std::copy_if(begin(cont), end(cont), std::inserter(out, out.begin()), p);
+
 	return out;
 }
 
@@ -181,5 +201,16 @@ int main() {
 		printVec("initial set", mySet);
 		auto filtered = FilterEraseIfGen(mySet, [](auto& elem) { return !elem.starts_with('*'); });
 		printVec("FilterRangesCopyIf", filtered);
+	}
+
+	{
+		std::set<std::string> mySet{ "Hello", "**txt", "World", "error", "warning", "C++", "****" };
+		auto filtered = FilterCopyIfGen(mySet, [](auto& elem) { return !elem.starts_with('*'); });
+		printVec("FilterCopyIfGen", filtered);
+	}
+
+	{
+		auto filtered = FilterCopyIfGen(vec, [](auto& elem) { return !elem.starts_with('*'); });
+		printVec("FilterCopyIfGen", filtered);
 	}
 }
