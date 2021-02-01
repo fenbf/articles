@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
+#include <optional>
 
 #define MY_TRACE(msg, ...) MyTraceImpl(__LINE__, __FILE__, msg, __VA_ARGS__)
 
@@ -72,7 +74,7 @@ public:
 	virtual bool IsMapVertex() const { return false; }
 
 protected:
-	std::vector<VertexBase*> m_vecNeighbours;
+	std::vector<VertexBase*> m_vecNeighbours; // observe only
 	int m_flags{ 0 };
 	double m_weight{ 1.0 };
 };
@@ -84,8 +86,10 @@ public:
 	explicit MapVertex(std::string name) : m_name(std::move(name)) { }
 
 	void SetName(const std::string& name) { m_name = name; }
-	bool IsMapVertex() const override { return true; }
 	std::string GetName() const { return m_name; }
+
+	bool IsMapVertex() const override { return true; }
+
 protected:
 	double m_range{ 0.0 };
 	std::string m_name;
@@ -183,19 +187,30 @@ int main()
 
 	CallBackFunction({ "Hello", 1 }, { "World", 2 });
 
-	MapVertex vertCracow{ "Cracow" };
-	MapVertex vertLondon{ "London" };
-	MapVertex vertBerlin{ "Berlin" };
-	vertCracow.AddVertex(&vertBerlin);
-	vertCracow.AddVertex(&vertLondon);
-	vertLondon.AddVertex(&vertCracow);
-
-
+	auto myVertex = std::make_shared<MySpecialVertex>("Cracow");
+	/*myVertex->AddVertex(std::make_shared<MySpecialVertex>("London"));
+	myVertex->AddVertex(std::make_shared<MySpecialVertex>("Berlin"));
+	myVertex->AddVertex(std::make_shared<MySpecialVertex>("Paric"));
+	myVertex->AddVertex(std::make_shared<MySpecialVertex>("Warsaw"));*/
 
 #ifdef _DEBUG
-	//myVertex.UpdateSurroundingNames();
-	//myVertex.AddVertex(std::make_shared<MySpecialVertex>("New York"));
+	myVertex->UpdateSurroundingNames();
+	//myVertex->AddVertex(std::make_shared<MySpecialVertex>("New York"));
 #endif // _DEBUG
 
 	DebugRectLoop();
+
+	std::pair firstpair{ 10, 42 };
+	std::pair secondpair{ 100.5, 42.5 };
+
+
+
+	std::optional optOne{ 42 };
+	std::optional<std::string> optTwo{};
+
+
+
+	std::vector vec{ 1, 2, 3, 4, 5 };
+
+	return 0;
 }
