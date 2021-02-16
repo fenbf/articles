@@ -2,13 +2,18 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <numeric>
+#include <ranges>
+#include <random>
 #include <sstream>
 #include <stack>
+#include <set>
 #include <string_view>
 #include <string>
 #include <vector> 
 
 #include "../trie.h"
+#include "simpleperf.h"
 
 using namespace std::literals;
 
@@ -44,6 +49,26 @@ splitSVStd(std::string_view strv, std::string_view delims = " ")
 	return output;
 }
 
+template<typename T>
+void ShuffleWithMT19937(T& container) // auto doesn't work with VS?
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::ranges::shuffle(container, gen);
+}
+
+template<typename T>
+void iota(T& v, int n) {
+	std::ranges::generate(v, [&n]() mutable { return n++; });
+}
+
+auto dice() {
+	static std::uniform_int_distribution<int> distr{ 1, 6 };
+	static std::random_device engine;
+	static std::mt19937 noise{ engine() };
+	return distr(noise);
+}
+
 int main(int argc, const char** argv) {
 	std::string testString{ LoremIpsumStrv };
 
@@ -63,10 +88,54 @@ int main(int argc, const char** argv) {
 
 	std::cout << "string length: " << testString.length() << '\n';
 
-	auto extractedWords = splitSVStd(testString, " ,.\n");
+	const auto extractedWords = splitSVStd(testString, " ,.\n");
 
 	std::cout << "extracted words: " << extractedWords.size() << '\n';
 
-	const size_t ITERS = argc > 2 ? atoi(argv[2]) : 1000;
+	const size_t ITERS = argc > 2 ? atoi(argv[2]) : 100;
 	std::cout << "test iterations: " << ITERS << '\n';
+
+	std::set<std::string_view> setWords;
+	Trie trieWords;
+
+	RunAndMeasure("set insert words", [&setWords, &extractedWords]() {
+		for (auto& word : extractedWords)
+			setWords.insert(word);
+		return 0;
+	});
+
+	RunAndMeasure("trie insert words", [&trieWords, &extractedWords]() {
+		for (auto& word : extractedWords)
+			trieWords.Insert(word);
+		return 0;
+	});
+
+	std::uniform_int_distribution<size_t> distr{ 0, extractedWords.size()-1 };
+	std::random_device engine;
+	std::mt19937 noise{ engine() };
+
+	std::vector<std::string_view> wordsToSearch(ITERS);
+	std::ranges::generate(wordsToSearch, [&distr, &noise, &extractedWords]() {
+		return extractedWords[distr(noise)];
+	});
+
+	RunAndMeasure("set search ITER random words", [&setWords, &wordsToSearch]() {
+		size_t cnt = 0;
+		for (auto& word : wordsToSearch)
+		{
+			if (setWords.find(word) != setWords.end())
+				++cnt;
+		}
+		return cnt;
+	});
+
+	RunAndMeasure("trie search ITER random words", [&trieWords, &wordsToSearch]() {
+		size_t cnt = 0;
+		for (auto& word : wordsToSearch)
+		{
+			if (trieWords.Find(word))
+				++cnt;
+		}
+		return cnt;
+	});
 }
