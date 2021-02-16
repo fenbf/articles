@@ -49,25 +49,6 @@ splitSVStd(std::string_view strv, std::string_view delims = " ")
 	return output;
 }
 
-template<typename T>
-void ShuffleWithMT19937(T& container) // auto doesn't work with VS?
-{
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::ranges::shuffle(container, gen);
-}
-
-template<typename T>
-void iota(T& v, int n) {
-	std::ranges::generate(v, [&n]() mutable { return n++; });
-}
-
-auto dice() {
-	static std::uniform_int_distribution<int> distr{ 1, 6 };
-	static std::random_device engine;
-	static std::mt19937 noise{ engine() };
-	return distr(noise);
-}
 
 int main(int argc, const char** argv) {
 	std::string testString{ LoremIpsumStrv };
@@ -92,7 +73,7 @@ int main(int argc, const char** argv) {
 
 	std::cout << "extracted words: " << extractedWords.size() << '\n';
 
-	const size_t ITERS = argc > 2 ? atoi(argv[2]) : 100;
+	const size_t ITERS = argc > 2 ? atoi(argv[2]) : 10;
 	std::cout << "test iterations: " << ITERS << '\n';
 
 	std::set<std::string_view> setWords;
@@ -138,4 +119,45 @@ int main(int argc, const char** argv) {
 		}
 		return cnt;
 	});
+
+	std::vector<std::string_view> prefixWords(ITERS);
+	std::transform(wordsToSearch.begin(), wordsToSearch.end(), prefixWords.begin(), [](const std::string_view word) {
+		if (word.length() > 4) {
+			return std::string_view{ word.data(), word.length() / 3 };
+		}
+		return word;
+	});
+
+	RunAndMeasure("set prefix search", [&setWords, &prefixWords]() {
+		size_t cnt = 0;
+		for (auto& word : prefixWords)
+		{
+			std::vector<std::string_view> out;
+			for (auto it = setWords.lower_bound(word); it != setWords.end(); ++it) {
+				if (it->starts_with(word))
+				{
+					out.push_back(*it);
+					//std::cout << *it << ", ";
+				}
+				else
+					break;
+			}
+			cnt += out.size();
+			//std::cout << '\n';
+		}
+		return cnt;
+		});
+
+	RunAndMeasure("trie prefix search", [&trieWords, &prefixWords]() {
+		size_t cnt = 0;
+		for (auto& word : prefixWords)
+		{
+			auto vec = trieWords.Match(word);
+			/*for (auto& w : vec)
+				std::cout << w << ", ";*/
+			cnt += vec.size();
+			//std::cout << '\n';
+		}
+		return cnt;
+		});
 }
