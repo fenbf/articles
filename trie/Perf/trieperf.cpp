@@ -54,12 +54,9 @@ int main(int argc, const char** argv) {
 	std::string testString{ LoremIpsumStrv };
 
 	if (argc == 1)
-	{
 		std::cout << "trie-perf.exe filename iterations\nNow using default params...\n\n";
-	}
 
-	if (argc > 1 && "nofile"s != argv[1])
-	{
+	if (argc > 1 && "nofile"s != argv[1]) {
 		std::ifstream inFile(argv[1]);
 
 		std::stringstream strStream;
@@ -76,12 +73,12 @@ int main(int argc, const char** argv) {
 	const size_t ITERS = argc > 2 ? atoi(argv[2]) : 10;
 	std::cout << "test iterations: " << ITERS << '\n';
 
-	std::set<std::string_view> setWords;
+	std::set<std::string> setWords;
 	Trie trieWords;
 
 	RunAndMeasure("set insert words", [&setWords, &extractedWords]() {
 		for (auto& word : extractedWords)
-			setWords.insert(word);
+			setWords.insert({ word.data(), word.length() });
 		return 0;
 	});
 
@@ -95,9 +92,10 @@ int main(int argc, const char** argv) {
 	std::random_device engine;
 	std::mt19937 noise{ engine() };
 
-	std::vector<std::string_view> wordsToSearch(ITERS);
+	std::vector<std::string> wordsToSearch(ITERS);
 	std::ranges::generate(wordsToSearch, [&distr, &noise, &extractedWords]() {
-		return extractedWords[distr(noise)];
+		auto w = extractedWords[distr(noise)];
+		return std::string{ w.data(), w.length() };
 	});
 
 	RunAndMeasure("set search ITER random words", [&setWords, &wordsToSearch]() {
@@ -120,23 +118,21 @@ int main(int argc, const char** argv) {
 		return cnt;
 	});
 
-	std::vector<std::string_view> prefixWords(ITERS);
-	std::transform(wordsToSearch.begin(), wordsToSearch.end(), prefixWords.begin(), [](const std::string_view word) {
+	std::vector<std::string> prefixWords(ITERS);
+	std::transform(wordsToSearch.begin(), wordsToSearch.end(), prefixWords.begin(), [](const std::string& word) {
 		if (word.length() > 4) {
-			return std::string_view{ word.data(), word.length() / 3 };
+			return word.substr(0, word.length() / 2);
 		}
 		return word;
 	});
 
 	RunAndMeasure("set prefix search", [&setWords, &prefixWords]() {
 		size_t cnt = 0;
-		for (auto& word : prefixWords)
-		{
-			std::vector<std::string_view> out;
-			for (auto it = setWords.lower_bound(word); it != setWords.end(); ++it) {
-				if (it->starts_with(word))
-				{
-					out.push_back(*it);
+		for (auto& prefix : prefixWords) {
+			std::vector<std::string> out;
+			for (auto it = setWords.lower_bound(prefix); it != setWords.end(); ++it) {
+				if (it->starts_with(prefix)) {
+					out.push_back({ it->data(), it->length() });
 					//std::cout << *it << ", ";
 				}
 				else
@@ -150,9 +146,8 @@ int main(int argc, const char** argv) {
 
 	RunAndMeasure("trie prefix search", [&trieWords, &prefixWords]() {
 		size_t cnt = 0;
-		for (auto& word : prefixWords)
-		{
-			auto vec = trieWords.Match(word);
+		for (auto& prefix : prefixWords) {
+			auto vec = trieWords.Match(prefix);
 			/*for (auto& w : vec)
 				std::cout << w << ", ";*/
 			cnt += vec.size();
