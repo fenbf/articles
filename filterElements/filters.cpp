@@ -97,11 +97,16 @@ auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
 		return p(elem) ? 1 : 0;
 	});
 
-	//Print("buffer", buffer);
+#ifdef _DEBUG
+	Print("input\t", buffer);
+	Print("buffer\t", buffer);
+#endif
 	std::exclusive_scan(std::execution::par, begin(buffer), end(buffer), begin(idx), 0);
-	//Print("idx", idx);
+#ifdef
+	Print("idx\t", idx);
+#endif
 
-	std::vector<T> out(idx.back());
+	std::vector<T> out(idx.back()+1);
 	std::vector<size_t> indexes(vec.size());
 	std::iota(indexes.begin(), indexes.end(), 0);
 
@@ -112,8 +117,7 @@ auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
 		}
 	});
 
-
-	//Print("out", out);
+	Print("out\t", out);
 	return out;
 }
 
@@ -129,7 +133,7 @@ auto FilterCopyIfParComposeSeq(const std::vector<T>& vec, Pred p) {
 	std::exclusive_scan(std::execution::par, begin(buffer), end(buffer), begin(idx), 0);
 	//Print("idx", idx);
 
-	std::vector<T> out(idx.back());
+	std::vector<T> out(idx.back()+1);
 	//std::vector<size_t> indexes(vec.size());
 	//std::iota(indexes.begin(), indexes.end(), 0);
 
@@ -141,7 +145,9 @@ auto FilterCopyIfParComposeSeq(const std::vector<T>& vec, Pred p) {
 		}
 	}
 
-	//Print("out", out);
+#ifdef _DEBUG
+	Print("out", out);
+#endif
 	return out;
 }
 
@@ -360,12 +366,18 @@ int main(int argc, const char** argv) {
 	// benchmark:
 	std::cout << "\n benchmarks: \n\n";
 
-	const size_t VEC_SIZE = argc > 1 ? atoi(argv[1]) : 62;
+	const size_t VEC_SIZE = argc > 1 ? atoi(argv[1]) : 10;
 	std::cout << "benchmark vec size: " << VEC_SIZE << '\n';
 
+#ifdef _DEBUG
+	auto test = [](int elem) { return elem != 0 && elem != 3 && elem != 6; };
+
+	std::vector<int> testVec(VEC_SIZE);
+	std::iota(testVec.begin(), testVec.end(), 0);
+#else
 	std::vector<std::pair<double, double>> testVec(VEC_SIZE);
 	std::ranges::generate(testVec.begin(), testVec.end(), [start = testVec.front()]() mutable {
-		return std::pair { start.first += 1.0, start.second += 0.5 };
+		return std::pair{ start.first += 1.0, start.second += 0.5 };
 	});
 
 
@@ -373,11 +385,7 @@ int main(int argc, const char** argv) {
 		auto sn = sin(elem.first) * cos(elem.second + 10.0);
 		return sn > 0.0;
 	};
-
-	//auto test = [](int elem) { return elem % 2 == 0; };
-
-	//std::vector<int> testVec(VEC_SIZE);
-	//std::iota(testVec.begin(), testVec.end(), 0);
+#endif
 
 	RunAndMeasure("FilterCopyIf                ", [&testVec, &test]() {
 		auto filtered = FilterCopyIf(testVec, test);
