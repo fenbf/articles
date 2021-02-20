@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <ranges>
+#include <random>
 #include <set>
 #include <string>
 #include <vector>
@@ -19,6 +20,13 @@ void Print(std::string_view intro, const TContainer& container) {
 	for (size_t i = 0; auto && elem : container)
 		std::cout << elem << (++i == container.size() ? "\n" : ", ");
 };
+template <std::floating_point T> 
+T GenRandom(T lower, T upper) {
+	// usage of thread local random engines allows running the generator in concurrent mode
+	thread_local static std::default_random_engine rd;
+	std::uniform_real_distribution<double> dist(lower, upper);
+	return dist(rd);
+}
 
 // vec and out won't ever overlap
 // but you can vec = Filter(vec)
@@ -102,11 +110,11 @@ auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
 	Print("buffer\t", buffer);
 #endif
 	std::exclusive_scan(std::execution::par, begin(buffer), end(buffer), begin(idx), 0);
-#ifdef
+#ifdef _DEBUG
 	Print("idx\t", idx);
 #endif
 
-	std::vector<T> out(idx.back()+1);
+	std::vector<T> out(idx.back() + buffer.back());
 	std::vector<size_t> indexes(vec.size());
 	std::iota(indexes.begin(), indexes.end(), 0);
 
@@ -117,7 +125,9 @@ auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
 		}
 	});
 
+#ifdef _DEBUG
 	Print("out\t", out);
+#endif
 	return out;
 }
 
@@ -133,7 +143,7 @@ auto FilterCopyIfParComposeSeq(const std::vector<T>& vec, Pred p) {
 	std::exclusive_scan(std::execution::par, begin(buffer), end(buffer), begin(idx), 0);
 	//Print("idx", idx);
 
-	std::vector<T> out(idx.back()+1);
+	std::vector<T> out(idx.back() + buffer.back());
 	//std::vector<size_t> indexes(vec.size());
 	//std::iota(indexes.begin(), indexes.end(), 0);
 
@@ -376,8 +386,8 @@ int main(int argc, const char** argv) {
 	std::iota(testVec.begin(), testVec.end(), 0);
 #else
 	std::vector<std::pair<double, double>> testVec(VEC_SIZE);
-	std::ranges::generate(testVec.begin(), testVec.end(), [start = testVec.front()]() mutable {
-		return std::pair{ start.first += 1.0, start.second += 0.5 };
+	std::ranges::generate(testVec.begin(), testVec.end(), []() mutable {
+		return std::pair{ GenRandom(-10.0, 10.0), GenRandom(-10.0, 10.0) };
 	});
 
 
