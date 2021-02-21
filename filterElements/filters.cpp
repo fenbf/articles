@@ -83,7 +83,7 @@ auto FilterCopyIfConcepts(const std::vector<T>& vec, Pred p) {
 }
 
 template <typename T, typename Pred>
-auto FilterCopyIfPar(const std::vector<T>& vec, Pred p) {
+auto FilterCopyIfParNaive(const std::vector<T>& vec, Pred p) {
 	std::vector<T> out;
 	std::mutex mut;
 	std::for_each(std::execution::par, begin(vec), end(vec),
@@ -99,10 +99,10 @@ auto FilterCopyIfPar(const std::vector<T>& vec, Pred p) {
 
 template <typename T, typename Pred>
 auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
-	std::vector<uint32_t> buffer(vec.size());
+	std::vector<uint8_t> buffer(vec.size());
 	std::vector<uint32_t> idx(vec.size());
 	std::transform(std::execution::par, begin(vec), end(vec), begin(buffer), [&p](const T& elem) {
-		return p(elem) ? 1 : 0;
+		return p(elem);
 	});
 
 #ifdef _DEBUG
@@ -133,10 +133,10 @@ auto FilterCopyIfParCompose(const std::vector<T>& vec, Pred p) {
 
 template <typename T, typename Pred>
 auto FilterCopyIfParComposeSeq(const std::vector<T>& vec, Pred p) {
-	std::vector<uint32_t> buffer(vec.size());
+	std::vector<uint8_t> buffer(vec.size());
 	std::vector<uint32_t> idx(vec.size());
 	std::transform(std::execution::par, begin(vec), end(vec), begin(buffer), [&p](const T& elem) {
-		return p(elem) ? 1 : 0;
+		return p(elem);
 		});
 
 	//Print("buffer", buffer);
@@ -148,12 +148,8 @@ auto FilterCopyIfParComposeSeq(const std::vector<T>& vec, Pred p) {
 	//std::iota(indexes.begin(), indexes.end(), 0);
 
 	for (size_t i = 0; i < vec.size(); ++i)
-	{
 		if (buffer[i])
-		{
 			out[idx[i]] = vec[i];
-		}
-	}
 
 #ifdef _DEBUG
 	Print("out", out);
@@ -227,28 +223,16 @@ auto FilterCopyIfParChunksFuture(const std::vector<T>& vec, Pred p) {
 template <typename T, typename Pred>
 auto FilterCopyIfParTransformPush(const std::vector<T>& vec, Pred p) {
 	std::vector<uint32_t> buffer(vec.size());
-	std::vector<uint32_t> idx(vec.size());
 	std::transform(std::execution::par, begin(vec), end(vec), begin(buffer), [&p](const T& elem) {
 		return p(elem) ? 1 : 0;
-		});
+	});
 
-	//Print("buffer", buffer);
-	//std::exclusive_scan(std::execution::par, begin(buffer), end(buffer), begin(idx), 0);
-	//Print("idx", idx);
-
-	std::vector<T> out;// (idx.back());
-	//std::vector<size_t> indexes(vec.size());
-	//std::iota(indexes.begin(), indexes.end(), 0);
+	std::vector<T> out;
 
 	for (size_t i = 0; i < vec.size(); ++i)
-	{
 		if (buffer[i])
-		{
 			out.push_back(vec[i]);
-		}
-	}
 
-	//Print("out", out);
 	return out;
 }
 
@@ -332,7 +316,7 @@ int main(int argc, const char** argv) {
 		//filtered = FilterCopyIf(vec, [](auto& elem) { return std::pair{ 1, 1 }; });
 	}
 	{
-		auto filtered = FilterCopyIfPar(vec, [](auto& elem) { return !elem.starts_with('*'); });
+		auto filtered = FilterCopyIfParNaive(vec, [](auto& elem) { return !elem.starts_with('*'); });
 		printVec("FilterCopyIfPar", filtered);
 	}
 	{
@@ -397,13 +381,25 @@ int main(int argc, const char** argv) {
 	};
 #endif
 
+	std::vector<uint8_t> buffer(testVec.size());
+
+	RunAndMeasure("transform only seq          ", [&testVec, &buffer, &test]() {
+		std::transform(begin(testVec), end(testVec), begin(buffer), test);
+		return buffer.size();
+	});
+
+	RunAndMeasure("transform only par          ", [&testVec, &buffer, &test]() {
+		std::transform(std::execution::par, begin(testVec), end(testVec), begin(buffer), test);
+		return buffer.size();
+	});
+
 	RunAndMeasure("FilterCopyIf                ", [&testVec, &test]() {
 		auto filtered = FilterCopyIf(testVec, test);
 		return filtered.size();
 	});
 
-	RunAndMeasure("FilterCopyIfPar             ", [&testVec, &test]() {
-		auto filtered = FilterCopyIfPar(testVec, test);
+	RunAndMeasure("FilterCopyIfParNaive        ", [&testVec, &test]() {
+		auto filtered = FilterCopyIfParNaive(testVec, test);
 		return filtered.size();
 	});
 
