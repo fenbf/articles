@@ -27,10 +27,30 @@ struct Timings {
 	size_t ret{};
 };
 
+#ifdef _MSC_VER
+
+#pragma optimize("", off)
+
 template <class T>
 void DoNotOptimizeAway(T&& datum) {
 	datum = datum;
 }
+
+#pragma optimize("", on)
+
+#elif defined(__clang__)
+
+template <class T>
+__attribute__((__optnone__)) void DoNotOptimizeAway(T&& /* datum */) {}
+
+#else
+
+template <class T>
+void DoNotOptimizeAway(T&& datum) {
+	asm volatile("" : "+r" (datum));
+}
+
+#endif
 
 template <typename TFunc> void RunAndMeasure(const char* title, TFunc func, std::vector<Timings>& timings)
 {
