@@ -24,16 +24,15 @@
 struct Timings {
 	std::string name;
 	double time{};
+	size_t ret{};
 };
-
-std::vector<Timings> g_timings;
 
 template <class T>
 void DoNotOptimizeAway(T&& datum) {
 	datum = datum;
 }
 
-template <typename TFunc> void RunAndMeasure(const char* title, TFunc func)
+template <typename TFunc> void RunAndMeasure(const char* title, TFunc func, std::vector<Timings>& timings)
 {
 	const auto start = std::chrono::steady_clock::now();
 	auto ret = func();
@@ -41,9 +40,8 @@ template <typename TFunc> void RunAndMeasure(const char* title, TFunc func)
 	DoNotOptimizeAway(ret);
 
 	const auto t = std::chrono::duration <double, std::milli>(end - start).count();
-	//std::cout << title << ": " << t << " ms, ret: " << ret << '\n';
 
-	g_timings.emplace_back(title, t);
+	timings.emplace_back(title, t, ret);
 }
 
 
@@ -232,6 +230,36 @@ auto FilterCopyIfParChunks(const std::vector<T>& vec, Pred p) {
 }
 
 template <typename T, typename Pred>
+auto FilterCopyIfParChunksReserve(const std::vector<T>& vec, Pred p) {
+	const auto chunks = std::thread::hardware_concurrency();
+	const auto chunkLen = vec.size() / chunks;
+	std::vector<size_t> indexes(chunks);
+	std::iota(indexes.begin(), indexes.end(), 0);
+
+	std::vector<std::vector<T>> copiedChunks(chunks);
+
+	std::for_each(std::execution::par, begin(indexes), end(indexes), [&](size_t i) {
+		copiedChunks[i].reserve(chunkLen);
+		auto startIt = std::next(std::begin(vec), i * chunkLen);
+		auto endIt = std::next(startIt, chunkLen);
+		std::copy_if(startIt, endIt, std::back_inserter(copiedChunks[i]), p);
+		});
+
+	std::vector<T> out;
+
+	for (const auto& part : copiedChunks)
+		out.insert(out.end(), part.begin(), part.end());
+
+	// remaining part:
+	if (vec.size() % chunks != 0) {
+		auto startIt = std::next(std::begin(vec), chunks * chunkLen);
+		std::copy_if(startIt, end(vec), std::back_inserter(out), p);
+	}
+
+	return out;
+}
+
+template <typename T, typename Pred>
 auto FilterCopyIfParChunksFuture(const std::vector<T>& vec, Pred p) {
 	const auto chunks = std::thread::hardware_concurrency();
 	const auto chunkLen = vec.size() / chunks;
@@ -243,6 +271,41 @@ auto FilterCopyIfParChunksFuture(const std::vector<T>& vec, Pred p) {
 		auto endIt = std::next(startIt, chunkLen);
 		tasks[i] = std::async(std::launch::async, [=, &p] {
 			std::vector<T> chunkOut;
+			std::copy_if(startIt, endIt, std::back_inserter(chunkOut), p);
+			return chunkOut;
+			});
+	}
+
+	std::vector<T> out;
+
+	for (auto& ft : tasks)
+	{
+		auto part = ft.get();
+		out.insert(out.end(), part.begin(), part.end());
+	}
+
+	// remaining part:
+	if (vec.size() % chunks != 0) {
+		auto startIt = std::next(std::begin(vec), chunks * chunkLen);
+		std::copy_if(startIt, end(vec), std::back_inserter(out), p);
+	}
+
+	return out;
+}
+
+template <typename T, typename Pred>
+auto FilterCopyIfParChunksFutureReserve(const std::vector<T>& vec, Pred p) {
+	const auto chunks = std::thread::hardware_concurrency();
+	const auto chunkLen = vec.size() / chunks;
+
+	std::vector<std::future<std::vector<T>>> tasks(chunks);
+
+	for (size_t i = 0; i < chunks; ++i) {
+		auto startIt = std::next(std::begin(vec), i * chunkLen);
+		auto endIt = std::next(startIt, chunkLen);
+		tasks[i] = std::async(std::launch::async, [=, &p] {
+			std::vector<T> chunkOut;
+			chunkOut.reserve(chunkLen);
 			std::copy_if(startIt, endIt, std::back_inserter(chunkOut), p);
 			return chunkOut;
 			});
@@ -498,108 +561,122 @@ int main(int argc, const char** argv) {
 
 	std::vector<uint8_t> buffer(testVec.size());
 
+	std::vector<Timings> timings;
+
 	RunAndMeasure("transform only seq          ", [&testVec, &buffer, &test]() {
 		std::transform(begin(testVec), end(testVec), begin(buffer), test);
 		return buffer.size();
-		});
+		}, timings);
 
 	RunAndMeasure("transform only par          ", [&testVec, &buffer, &test]() {
 		std::transform(std::execution::par, begin(testVec), end(testVec), begin(buffer), test);
 		return buffer.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIf                ", [&testVec, &test]() {
 		auto filtered = FilterCopyIf(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParNaive        ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParNaive(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParCompose      ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParCompose(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParComposeSeq   ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParComposeSeq(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParTransformPush", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParTransformPush(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParChunks       ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunks(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
+
+	RunAndMeasure("FilterCopyIfParChunksReserve", [&testVec, &test]() {
+		auto filtered = FilterCopyIfParChunksReserve(testVec, test);
+		return filtered.size();
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfParChunksFuture ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunksFuture(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
+
+	RunAndMeasure("CopyIfParChunksFutureReserve", [&testVec, &test]() {
+		auto filtered = FilterCopyIfParChunksFutureReserve(testVec, test);
+		return filtered.size();
+		}, timings);
 
 	RunAndMeasure("FilterRaw                   ", [&testVec, &test]() {
 		auto filtered = FilterRaw(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterRawOld                ", [&testVec, &test]() {
 		auto filtered = FilterRawOld(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfConcepts        ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfConcepts(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterRemoveCopyIf          ", [&testVec, &test]() {
 		auto filtered = FilterRemoveCopyIf(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterRemoveErase           ", [&testVec, &test]() {
 		auto filtered = FilterRemoveErase(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterEraseIf               ", [&testVec, &test]() {
 		auto filtered = FilterEraseIf(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterRangesCopyif          ", [&testVec, &test]() {
 		auto filtered = FilterRangesCopyIf(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterRangesCopyIfGen       ", [&testVec, &test]() {
 		auto filtered = FilterRangesCopyIfGen(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterEraseIfGen            ", [&testVec, &test]() {
 		auto filtered = FilterEraseIfGen(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
 	RunAndMeasure("FilterCopyIfGen             ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfGen(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
-	RunAndMeasure("MyCopyIf                     ", [&testVec, &test]() {
+	RunAndMeasure("MyCopyIf                    ", [&testVec, &test]() {
 		auto filtered = MyCopyIf(testVec, test);
 		return filtered.size();
-		});
+		}, timings);
 
-	std::sort(g_timings.begin(), g_timings.end(), [](const auto& i1, const auto& i2) {return i1.time < i2.time; });
+	std::sort(timings.begin(), timings.end(), [](const auto& i1, const auto& i2) {
+		return i1.time < i2.time; }
+	);
 
-	for (const auto& t : g_timings)
+	for (const auto& t : timings)
 		std::cout << t.name << ' ' << t.time << '\n';
 }

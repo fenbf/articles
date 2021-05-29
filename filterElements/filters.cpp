@@ -193,6 +193,36 @@ auto FilterCopyIfParChunks(const std::vector<T>& vec, Pred p) {
 }
 
 template <typename T, typename Pred>
+auto FilterCopyIfParChunksReserve(const std::vector<T>& vec, Pred p) {
+	const auto chunks = std::thread::hardware_concurrency();
+	const auto chunkLen = vec.size() / chunks;
+	std::vector<size_t> indexes(chunks);
+	std::iota(indexes.begin(), indexes.end(), 0);
+
+	std::vector<std::vector<T>> copiedChunks(chunks);
+
+	std::for_each(std::execution::par, begin(indexes), end(indexes), [&](size_t i) {
+		copiedChunks[i].reserve(chunkLen);
+		auto startIt = std::next(std::begin(vec), i * chunkLen);
+		auto endIt = std::next(startIt, chunkLen);
+		std::copy_if(startIt, endIt, std::back_inserter(copiedChunks[i]), p);
+		});
+
+	std::vector<T> out;
+
+	for (const auto& part : copiedChunks)
+		out.insert(out.end(), part.begin(), part.end());
+
+	// remaining part:
+	if (vec.size() % chunks != 0) {
+		auto startIt = std::next(std::begin(vec), chunks * chunkLen);
+		std::copy_if(startIt, end(vec), std::back_inserter(out), p);
+	}
+
+	return out;
+}
+
+template <typename T, typename Pred>
 auto FilterCopyIfParChunksFuture(const std::vector<T>& vec, Pred p) {
 	const auto chunks = std::thread::hardware_concurrency();
 	const auto chunkLen = vec.size() / chunks;
@@ -207,6 +237,41 @@ auto FilterCopyIfParChunksFuture(const std::vector<T>& vec, Pred p) {
 			std::copy_if(startIt, endIt, std::back_inserter(chunkOut), p);
 			return chunkOut;
 		});
+	}
+
+	std::vector<T> out;
+
+	for (auto& ft : tasks)
+	{
+		auto part = ft.get();
+		out.insert(out.end(), part.begin(), part.end());
+	}
+
+	// remaining part:
+	if (vec.size() % chunks != 0) {
+		auto startIt = std::next(std::begin(vec), chunks * chunkLen);
+		std::copy_if(startIt, end(vec), std::back_inserter(out), p);
+	}
+
+	return out;
+}
+
+template <typename T, typename Pred>
+auto FilterCopyIfParChunksFutureReserve(const std::vector<T>& vec, Pred p) {
+	const auto chunks = std::thread::hardware_concurrency();
+	const auto chunkLen = vec.size() / chunks;
+
+	std::vector<std::future<std::vector<T>>> tasks(chunks);
+
+	for (size_t i = 0; i < chunks; ++i) {
+		auto startIt = std::next(std::begin(vec), i * chunkLen);
+		auto endIt = std::next(startIt, chunkLen);
+		tasks[i] = std::async(std::launch::async, [=, &p] {
+			std::vector<T> chunkOut;
+			chunkOut.reserve(chunkLen);
+			std::copy_if(startIt, endIt, std::back_inserter(chunkOut), p);
+			return chunkOut;
+			});
 	}
 
 	std::vector<T> out;
@@ -366,7 +431,7 @@ int main(int argc, const char** argv) {
 	// benchmark:
 	std::cout << "\n benchmarks: \n\n";
 
-	const size_t VEC_SIZE = argc > 1 ? atoi(argv[1]) : 10;
+	const size_t VEC_SIZE = argc > 1 ? atoi(argv[1]) : 10000;
 	std::cout << "benchmark vec size: " << VEC_SIZE << '\n';
 
 #ifdef _DEBUG
@@ -426,9 +491,16 @@ int main(int argc, const char** argv) {
 		auto filtered = FilterCopyIfParChunks(testVec, test);
 		return filtered.size();
 		});
+	RunAndMeasure("FilterCopyIfParChunksReserve", [&testVec, &test]() {
+		auto filtered = FilterCopyIfParChunksReserve(testVec, test);
+		return filtered.size();
+		});
 	RunAndMeasure("FilterCopyIfParChunksFuture ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunksFuture(testVec, test);
 		return filtered.size();
 		});
-	
+	RunAndMeasure("CopyIfParChunksFutureReserve", [&testVec, &test]() {
+		auto filtered = FilterCopyIfParChunksFutureReserve(testVec, test);
+		return filtered.size();
+		});
 }
