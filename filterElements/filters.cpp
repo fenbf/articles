@@ -429,7 +429,9 @@ int main(int argc, const char** argv) {
 	}
 
 	// benchmark:
-	std::cout << "\n benchmarks: \n\n";
+	//std::cout << "\n benchmarks: \n\n";
+
+	std::vector<Timing> timings;
 
 	const size_t VEC_SIZE = argc > 1 ? atoi(argv[1]) : 10000;
 	std::cout << "benchmark vec size: " << VEC_SIZE << '\n';
@@ -457,50 +459,62 @@ int main(int argc, const char** argv) {
 	RunAndMeasure("transform only seq          ", [&testVec, &buffer, &test]() {
 		std::transform(begin(testVec), end(testVec), begin(buffer), test);
 		return buffer.size();
-	});
+	}, timings);
 
 	RunAndMeasure("transform only par          ", [&testVec, &buffer, &test]() {
 		std::transform(std::execution::par, begin(testVec), end(testVec), begin(buffer), test);
 		return buffer.size();
-	});
+	}, timings);
 
 	RunAndMeasure("FilterCopyIf                ", [&testVec, &test]() {
 		auto filtered = FilterCopyIf(testVec, test);
 		return filtered.size();
-	});
+	}, timings);
 
 	RunAndMeasure("FilterCopyIfParNaive        ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParNaive(testVec, test);
 		return filtered.size();
-	});
+	}, timings);
 
 	RunAndMeasure("FilterCopyIfParCompose      ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParCompose(testVec, test);
 		return filtered.size();
-	});
+	}, timings);
 
 	RunAndMeasure("FilterCopyIfParComposeSeq   ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParComposeSeq(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
 	RunAndMeasure("FilterCopyIfParTransformPush", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParTransformPush(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
 	RunAndMeasure("FilterCopyIfParChunks       ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunks(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
 	RunAndMeasure("FilterCopyIfParChunksReserve", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunksReserve(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
 	RunAndMeasure("FilterCopyIfParChunksFuture ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunksFuture(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
 	RunAndMeasure("CopyIfParChunksFutureReserve", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParChunksFutureReserve(testVec, test);
 		return filtered.size();
-		});
+	}, timings);
+
+	std::sort(timings.begin(), timings.end(), [](const auto& i1, const auto& i2) {
+		return i1.time < i2.time; }
+	);
+
+	for (const auto& t : timings)
+		std::cout << t.name << ' ' << t.time << '\n';
 }

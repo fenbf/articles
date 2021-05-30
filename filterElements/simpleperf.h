@@ -43,3 +43,20 @@ template <typename TFunc> void RunAndMeasure(const char* title, TFunc func)
 	std::cout << title << ": " << std::chrono::duration <double, std::milli>(end - start).count() << " ms, ret: " << ret << '\n';
 }
 
+struct Timing {
+	std::string name;
+	double time{};
+	size_t ret{};
+};
+
+template <typename TFunc> void RunAndMeasure(const char* title, TFunc func, std::vector<Timing>& timings)
+{
+	const auto start = std::chrono::steady_clock::now();
+	auto ret = func();
+	const auto end = std::chrono::steady_clock::now();
+	DoNotOptimizeAway(ret);
+
+	const auto t = std::chrono::duration <double, std::milli>(end - start).count();
+
+	timings.emplace_back(title, t, ret);
+}
