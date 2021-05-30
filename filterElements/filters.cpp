@@ -471,6 +471,11 @@ int main(int argc, const char** argv) {
 		return filtered.size();
 	}, timings);
 
+	RunAndMeasure("FilterEraseIf               ", [&testVec, &test]() {
+		auto filtered = FilterEraseIf(testVec, test);
+		return filtered.size();
+		}, timings);
+
 	RunAndMeasure("FilterCopyIfParNaive        ", [&testVec, &test]() {
 		auto filtered = FilterCopyIfParNaive(testVec, test);
 		return filtered.size();
@@ -511,9 +516,7 @@ int main(int argc, const char** argv) {
 		return filtered.size();
 	}, timings);
 
-	std::sort(timings.begin(), timings.end(), [](const auto& i1, const auto& i2) {
-		return i1.time < i2.time; }
-	);
+	std::ranges::sort(timings, {}, &Timing::time);
 
 	for (const auto& t : timings)
 		std::cout << t.name << ' ' << t.time << '\n';
