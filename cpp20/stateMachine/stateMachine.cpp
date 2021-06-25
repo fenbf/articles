@@ -1,9 +1,10 @@
-#include <variant>
-#include <format>
+import std.core;
+
+/*#include <chrono>
 #include <iostream>
+#include <variant>
 #include <unordered_map>
-#include <string>
-#include <chrono>
+#include <vector>*/
 
 namespace detail {
 	template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
@@ -91,6 +92,7 @@ namespace event {
 }
 
 ShopState onEvent(state::EmptyBasket empty, event::AddItem newItem, OrderSystem& ) {
+	std::cout << std::format("EmptyBasket -> AddItem \"{}\", count {}\n", newItem.name_, newItem.count_);
 	if (newItem.count_ > 0) // plus check if the item name is in the inventory... future...
 	{
 		state::ActiveBasket active;
@@ -101,6 +103,7 @@ ShopState onEvent(state::EmptyBasket empty, event::AddItem newItem, OrderSystem&
 }
 
 ShopState onEvent(state::ActiveBasket active, event::AddItem newItem, OrderSystem& ) {
+	std::cout << std::format("ActiveBasket -> AddItem \"{}\", count {}\n", newItem.name_, newItem.count_);
 	if (newItem.count_ > 0) // plus check if the item name is in the inventory... future...
 		active.items_[newItem.name_] += newItem.count_;
 
@@ -108,6 +111,7 @@ ShopState onEvent(state::ActiveBasket active, event::AddItem newItem, OrderSyste
 }
 
 ShopState onEvent(state::ActiveBasket active, event::RemoveItem remItem, OrderSystem&) {
+	std::cout << std::format("ActiveBasket -> RemoveItem \"{}\", count {}\n", remItem.name_, remItem.count_);
 	if (remItem.count_ > 0) {
 		if (active.items_[remItem.name_] > remItem.count_)
 			active.items_[remItem.name_] -= remItem.count_;
@@ -122,12 +126,14 @@ ShopState onEvent(state::ActiveBasket active, event::RemoveItem remItem, OrderSy
 }
 
 ShopState onEvent(state::ActiveBasket active, event::StartOrder startOrder, OrderSystem& orderSys) {
+	std::cout << std::format("ActiveBasket -> StartOrder\n");
 	orderSys.placeOrder(active.items_);
 
 	return state::ReadyToOrder{  };
 }
 
 ShopState onEvent(state::ReadyToOrder ready, event::CompleteOrder complete, OrderSystem& orderSys) {
+	std::cout << std::format("ReadyToOrder -> CompleteOrder for {}\n", complete.userData_);
 	if (!orderSys.completeOrder(complete.userData_))
 		return ready; // + throw some error? report?
 
