@@ -78,23 +78,25 @@ namespace oldGame {
 
 			throw std::logic_error{ "Unsupported state transition" };
 		}
-HealthState onHeal(unsigned int param) {
-	if (state_ == HealthState::PlayerAlive) {
-		std::cout << std::format("PlayerAlive -> Heal points {}\n", param);
 
-		currentHealth_+= param;
-		return state_;
-	}
-	throw std::logic_error{ "Unsupported state transition" };
-}
-HealthState onRestart(unsigned int param) {
-	if (state_ == HealthState::PlayerDead) {
-		std::cout << std::format("PlayerDead -> restart\n");
-		currentHealth_ = param;
-		return HealthState::PlayerAlive;
-	}
-	throw std::logic_error{ "Unsupported state transition" };
-}
+		HealthState onHeal(unsigned int param)
+		{
+			if (state_ == HealthState::PlayerAlive) {
+				std::cout << std::format("PlayerAlive -> Heal points {}\n", param);
+
+				currentHealth_ += param;
+				return state_;
+			}
+			throw std::logic_error{ "Unsupported state transition" };
+		}
+		HealthState onRestart(unsigned int param) {
+			if (state_ == HealthState::PlayerDead) {
+				std::cout << std::format("PlayerDead -> restart\n");
+				currentHealth_ = param;
+				return HealthState::PlayerAlive;
+			}
+			throw std::logic_error{ "Unsupported state transition" };
+		}
 
 	private:
 		HealthState state_;
@@ -106,59 +108,60 @@ HealthState onRestart(unsigned int param) {
 void OldGameHealtfFSMTest() {
 	using namespace oldGame;
 
-GameStateMachine game;
-game.startGame(100, 1);
+	GameStateMachine game;
+	game.startGame(100, 1);
 
-try {
-	game.processEvent(Event::HitByMonster, 30);
-	game.reportCurrentState();
-	game.processEvent(Event::HitByMonster, 30);
-	game.reportCurrentState();
-	game.processEvent(Event::HitByMonster, 30);
-	game.reportCurrentState();
-	game.processEvent(Event::HitByMonster, 30);
-	game.reportCurrentState();
-	game.processEvent(Event::Restart, 100);
-	game.reportCurrentState();
-	game.processEvent(Event::HitByMonster, 60);
-	game.reportCurrentState();
-	game.processEvent(Event::HitByMonster, 50);
-	game.reportCurrentState();
-	game.processEvent(Event::Restart, 100);
-	game.reportCurrentState();
+	try {
+		game.processEvent(Event::HitByMonster, 30);
+		game.reportCurrentState();
+		game.processEvent(Event::HitByMonster, 30);
+		game.reportCurrentState();
+		game.processEvent(Event::HitByMonster, 30);
+		game.reportCurrentState();
+		game.processEvent(Event::HitByMonster, 30);
+		game.reportCurrentState();
+		game.processEvent(Event::Restart, 100);
+		game.reportCurrentState();
+		game.processEvent(Event::HitByMonster, 60);
+		game.reportCurrentState();
+		game.processEvent(Event::HitByMonster, 50);
+		game.reportCurrentState();
+		game.processEvent(Event::Restart, 100);
+		game.reportCurrentState();
 
-}
-catch (std::exception& ex) {
-	std::cout << "Exception! " << ex.what() << '\n';
-}
+	}
+	catch (std::exception& ex) {
+		std::cout << "Exception! " << ex.what() << '\n';
+	}
 }
 
 namespace game {
 
-namespace state {
-	struct PlayerAlive { unsigned int health_{ 0 }; unsigned int remainingLives_{ 0 }; };
+	namespace state {
+		struct PlayerAlive { unsigned int health_{ 0 }; unsigned int remainingLives_{ 0 }; };
 
-	struct PlayerDead { unsigned int remainingLives_{ 0 }; };
+		struct PlayerDead { unsigned int remainingLives_{ 0 }; };
 
-	struct GameOver { };
-}
+		struct GameOver { };
+	}
 
-using HealthState = std::variant<state::PlayerAlive, state::PlayerDead, state::GameOver>;
+	using HealthState = std::variant<state::PlayerAlive, state::PlayerDead, state::GameOver>;
 
-namespace event {
-	struct HitByMonster { unsigned int forcePoints_{ 0 }; };
+	namespace event {
+		struct HitByMonster { unsigned int forcePoints_{ 0 }; };
 
-	struct Heal { unsigned int points_{ 0 }; };
+		struct Heal { unsigned int points_{ 0 }; };
 
-	struct Restart { unsigned int startHealth_{ 0 }; };
-}
+		struct Restart { unsigned int startHealth_{ 0 }; };	
+	}
 
-	HealthState onEvent(state::PlayerAlive alive, const event::HitByMonster& monster) {
+	using PossibleEvent = std::variant<event::HitByMonster, event::Heal, event::Restart>;
+
+	HealthState onEvent(const state::PlayerAlive& alive, const event::HitByMonster& monster) {
 		std::cout << std::format("PlayerAlive -> HitByMonster force {}\n", monster.forcePoints_);
 		if (alive.health_ > monster.forcePoints_)
 		{
-			alive.health_ -= monster.forcePoints_;
-			return alive;
+			return state::PlayerAlive{alive.health_ - monster.forcePoints_, alive.remainingLives_};
 		}
 
 		if (alive.remainingLives_ > 0)
@@ -167,20 +170,19 @@ namespace event {
 		return state::GameOver{};
 	}
 
-	HealthState onEvent(state::PlayerAlive alive, const event::Heal& healingBonus) {
+	HealthState onEvent(const state::PlayerAlive& alive, const event::Heal& healingBonus) {
 		std::cout << std::format("PlayerAlive -> Heal points {}\n", healingBonus.points_);
 
-		alive.health_ += healingBonus.points_;
-		return alive;
+		return state::PlayerAlive{alive.health_ + healingBonus.points_, alive.remainingLives_};;
 	}
 
-	HealthState onEvent(state::PlayerDead dead, const event::Restart& restart) {
+	HealthState onEvent(const state::PlayerDead& dead, const event::Restart& restart) {
 		std::cout << std::format("PlayerDead -> restart\n");
 
 		return state::PlayerAlive{ restart.startHealth_, dead.remainingLives_ };
 	}
 
-	HealthState onEvent(state::GameOver over, const event::Restart& restart) {
+	HealthState onEvent(const state::GameOver& over, const event::Restart& restart) {
 		std::cout << std::format("GameOver -> restart\n");
 
 		std::cout << "Game Over, please restart the whole game!\n";
@@ -188,7 +190,7 @@ namespace event {
 		return over;
 	}
 
-	HealthState onEvent(auto state, const auto&) {
+	HealthState onEvent(const auto&, const auto&) {
 		throw std::logic_error{ "Unsupported state transition" };
 	}
 
@@ -198,14 +200,13 @@ namespace event {
 			state_ = state::PlayerAlive{ health, lives };
 		}
 
-		template <typename Event>
-		void processEvent(const Event& event) {
+		void processEvent(const PossibleEvent& event) {
 			state_ = std::visit(detail::overload{
-				[&](const auto& state) {
-				  return onEvent(state, event);
+				[](const auto& state, const auto& evt) {
+				  return onEvent(state, evt);
 				}
 				},
-				state_);
+				state_, event);
 		}
 
 		void reportCurrentState() {
@@ -230,6 +231,9 @@ namespace event {
 
 void GameHealtfFSMTest() {
 	using namespace game;
+
+	std::cout << std::format("sizeof(HealthState):   {}\n", sizeof(HealthState));
+    std::cout << std::format("sizeof(PossibleEvent): {}\n", sizeof(PossibleEvent));
 
 	GameStateMachine game;
 	game.startGame(100, 1);
@@ -259,6 +263,6 @@ void GameHealtfFSMTest() {
 }
 
 int main() {
-	//GameHealtfFSMTest();
-	OldGameHealtfFSMTest();
+	GameHealtfFSMTest();
+	//OldGameHealtfFSMTest();
 }
