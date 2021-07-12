@@ -20,6 +20,19 @@ int main() {
 	auto date = std::chrono::year_month_weekday{ floor<std::chrono::days>(now) };
 	std::cout << std::format("The current date is: {}, and the year is {}\n", date, date.year());
 
-	std::cout << std::format("{:-^10}\n{:-<10}\n{:->10}", 7, 8, 9);
+	std::cout << std::format("Hello {} {} {} {}\n", "world", 1, 2, 3);
+	std::cout << std::format("{:-^10}\n{:-<10}\n{:->10}\n", 7, 8, 9);
 
+	{
+		using namespace std::chrono;
+		year y{ 2021 };
+		constexpr year_month_day today = std::chrono::year{ 2021 } / 7 / 7;
+		auto inFuture2 = today + months{ 12 };
+		auto inFuture3 = today + days{ 12 };
+		constexpr year_month_day today2 = 2021y / July / 7;
+		static_assert(today == today2);
+		auto inFuture = std::chrono::sys_days{ today } + std::chrono::days{ 365 };		
+		std::cout << std::format("{}", inFuture);
+		year_month_day nextYear = inFuture;
+	}
 }
