@@ -155,6 +155,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="helper.ixx" />
+    <ClCompile Include="newGame.ixx" />
+    <ClCompile Include="newGameImpl.cpp" />
+    <ClCompile Include="oldGame.ixx" />
+    <ClCompile Include="oldGameImpl.cpp" />
+    <ClCompile Include="shopping.ixx" />
+    <ClCompile Include="shoppingImpl.cpp" />
     <ClCompile Include="stateMachine.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
