@@ -4,10 +4,10 @@
 #include <iostream>  
 #include <sstream>  
 #include <filesystem>  
-#include "filesystemTest.h"
+//#include "filesystemTest.h"
 
 using namespace std;
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 // example adapted from https://docs.microsoft.com/pl-pl/cpp/standard-library/file-system-navigation
 void DisplayPathInfo(const fs::path& pathToShow)
@@ -70,7 +70,7 @@ std::uintmax_t ComputeDirectorySize(const fs::path& pathToCheck)
 	return size;
 }
 
-void DisplayFileInfo(const std::experimental::filesystem::v1::directory_entry & entry, std::string &lead, std::experimental::filesystem::v1::path &filename)
+void DisplayFileInfo(const std::filesystem::directory_entry & entry, std::string &lead, std::filesystem::path &filename)
 {
 	time_t cftime = chrono::system_clock::to_time_t(fs::last_write_time(entry));
 	cout << lead << " " << filename << ", " 
